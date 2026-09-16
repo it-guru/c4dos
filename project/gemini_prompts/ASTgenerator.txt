@@ -1,0 +1,47 @@
+Im ersten Schritt werden wir nur den AST Generator ...
+lib/kernel/condition/base.py
+... anpassen.
+Die Einrückungsschrittweite sollen 3 Leerzeichen sein.
+Alle u.U. vorhandenen Kommentare immer in englisch.
+Der AST generator muß folgende Regeln unterstützen:
+
+Die Conditions (filterExpr) die build_ast sind immer
+in der Form:
+[ # List-Ebene 1
+  
+  [ # List-Ebene 2
+    dict1,
+    dict2
+    ...
+  ],
+  [ # List-Ebene 2
+    dict3,
+    dict4
+    ...
+  ]
+]
+
+In der List-Ebene 2 sind die dict's die die eigentlichen
+Bedinungen darstellen (dict-Conditions).
+
+Alles auf Ebene 2 soll ODER verknüft werden.
+Alles resultierende auf Ebene 1 soll UND verknüft werden.
+
+build_ast erhält als zweiten Parameter parent._Field was 
+ein dict mit den Feld-Namen als Keys und den Feld-Objekten
+als values ist.
+In den Feld-Objekten gibt es ein Attribut backendname mit
+dem das betreffende Feld im Backend (z.B. SQL) referenziert
+werden soll.
+
+
+In den dict-Conditions gilt folgendes:
+Die Keys beziehen sich immer auf die keys in parent._Field
+und in diesen Feld-Objekten können dann Informationen abgeleitet
+werden, wie die Filter-Ausdrücke in den AST übernommen werden.
+Hier muss z.B. bei isinstance(fldobj,FieldDate) ein anderes Verfahren angewandt werden, als bei anderen Feld-Objekten (Text) - genaueres
+weiter unten.
+
+
+
+

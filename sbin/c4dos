@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+import sys
+sys.dont_write_bytecode = True
+
+import importlib
+from pathlib import Path
+script_dir = Path(__file__).resolve().parent
+lib_dir = script_dir / '..' / 'lib'
+sys.path.insert(0, str(lib_dir))
+sys.path.insert(1, str(script_dir))
+
+
+import os
+import time
+import signal
+import secrets
+from logger import *
+import mmap
+import argparse
+from setproctitle import setproctitle
+from multiprocessing import Process, Lock
+
+import urllib.request
+import urllib.error
+
+import gunicorn.app.base
+
+
+import http.client
+import socket
+
+from pprint import pprint
+
+__CONFIG__="nix"
+
+
+
+C4InternalKey = secrets.token_hex(64)
+
+C4Server      = None
+C4App         = None
+C4CtrlPID     = None
+C4AppPath     = (Path(__file__).resolve().parent,)
+C4ProcServer  = []
+
+
+def handle_sighup(signum, frame):
+   for p in C4ProcServer:
+      if p.is_alive():
+          try:
+              os.kill(p.pid, signal.SIGHUP)
+          except ProcessLookupError:
+              print(f"ERROR Process {p.name} not found.")
+      else:
+          print(f"ERROR {p.name} not running")
+
+signal.signal(signal.SIGHUP, handle_sighup)
+signal.signal(signal.SIGUSR1, handle_sighup)
+signal.signal(signal.SIGUSR2, handle_sighup)
+
+
+
+class C4GunicornApp(gunicorn.app.base.BaseApplication):
+   def __init__(self, appTarget, options=None):
+      self.options = options or {}
+      self.appTarget=appTarget
+      self.C4InternalKey=C4InternalKey
+      super().__init__()
+
+   def load_config(self):
+      config = {key: value for key, value in self.options.items()
+                if key in self.cfg.settings and value is not None}
+      for key, value in config.items():
+          self.cfg.set(key.lower(), value)
+#      self.cfg.set('post_fork', self.wsgi_post_fork)
+
+   def load(self):
+      #gunicorn_logger = logging.getLogger('gunicorn.error')
+      logger.info(f"start load of {self.appTarget}")
+      pid=os.getpid()
+      modules_to_delete = []
+      for mod_name in list(sys.modules.keys()):
+         mod = sys.modules[mod_name]
+         if mod_name in ('__main__', '__mp_main__'):
+            continue
+         if not mod or not hasattr(mod, '__file__') or mod.__file__ is None: 
+            continue
+         try:
+            mod_file_path = Path(mod.__file__).resolve()
+            for allowed_dir in C4AppPath:
+               if allowed_dir in mod_file_path.parents or allowed_dir == mod_file_path:
+                  modules_to_delete.append(mod_name)
+                  break
+         except Exception:
+             continue
+
+      for mod_name in modules_to_delete:
+         logger.info(f"drop module {mod_name} from memory in PID={pid}")
+         del sys.modules[mod_name]
+
+ 
+      importlib.import_module("C4Flask")
+      module_path, app_variable_name = self.appTarget.split(":")
+      module = importlib.import_module(module_path)
+      importlib.reload(module)
+      self.application = getattr(module, app_variable_name)
+      self.application.ppid=os.getpid()
+      self.application.C4AppPath=C4AppPath
+      self.application.C4InternalKey=C4InternalKey
+      #self.application.logger.handlers = gunicorn_logger.handlers
+      #self.application.logger.setLevel(gunicorn_logger.level)
+
+      C4Flask_class = getattr(module, 'C4Flask', None)
+      if C4Flask_class:
+         C4Flask_class.load_plugins(self.application)
+      return self.application
+
+def invoke_C4Server_listener():
+   setproctitle("C4Server")
+   scheduler = DynamicScheduler()
+
+   def on_exit(server):
+      print("[C4Server] Stopping CronScheduler background thread...")
+      scheduler.stop()
+
+   options = {
+      'bind': '127.0.0.1:8081',
+      'workers': 1,
+      'threads': 4,
+      'timeout': 20,
+      'graceful_timeout': 20,
+      'proc_name': "C4Server",
+      'on_exit': on_exit,
+      'loglevel': os.environ.get('LOG_LEVEL', 'warning').lower()
+   }
+   print("Start scheduler")
+   scheduler.start()
+
+   C4GunicornApp("workers.C4Server:app", options).run()
+
+def invoke_C4App_listener():
+   setproctitle("C4App")
+   options = {
+      'bind': '127.0.0.1:8080',
+      'workers': 4,
+      'threads': 16,
+      'timeout': 610,        # now WebUI Requests are limited to 10min. (hard!)
+      'graceful_timeout': 610,
+      'proc_name': "C4App",
+      'loglevel': os.environ.get('LOG_LEVEL', 'warning').lower()
+   }
+   C4GunicornApp("workers.C4App:app", options).run()
+
+def normal_shutdown(signum,frame):
+   if C4CtrlPID == os.getpid():  # due fork, W5App and W5Ctrl get also signals
+      print(f"\n[C4Ctrl] Signal {signum} received!")
+      if C4Server and C4Server.is_alive():
+         C4Server.terminate()
+         C4Server.join()
+
+      if C4App and C4App.is_alive():
+         C4App.terminate()
+         C4App.join()
+
+   sys.exit(0)
+
+
+
+if __name__ == '__main__':
+   C4CtrlPID=os.getpid();
+
+   signal.signal(signal.SIGTERM, normal_shutdown)
+   signal.signal(signal.SIGINT, normal_shutdown)
+
+
+   parser = argparse.ArgumentParser(description="c4dos - Process-Server")
+   parser.add_argument("-v","--verbose",action="store_true",
+                       help="run event in verbos mode")
+   parser.add_argument("-c","--config",
+                       help="defines the config to load")
+   args = parser.parse_args()
+   __CONFIG__=args.config
+
+   from config import config
+   from scheduler import DynamicScheduler
+  
+
+   if ("X-AUTHKEY" in config["GLOBAL"]):
+      C4InternalKey = config["GLOBAL"]["X-AUTHKEY"]
+
+   C4Server=Process(target=invoke_C4Server_listener)
+   C4Server.daemon=True
+   C4ProcServer.append(C4Server)
+   C4Server.start()
+  
+   C4App=Process(target=invoke_C4App_listener)
+   C4App.daemon=True
+   C4ProcServer.append(C4App)
+   C4App.start()
+  
+   setproctitle("c4dos")
+   while True:
+      time.sleep(99)
+
+

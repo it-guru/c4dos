@@ -1,0 +1,11 @@
+Controler for DataObjects in Python-Environments
+
+C4DiPE  (spoken: C for DIPE)
+
+RH Based Packages:
+
+yum  install python3-setproctitle python3-gunicorn python3-flask python3-PyMySQL python3-pyodbc python3-sqlalchemy python-flask-sqlalchemy
+
+
+for MSSQL Access
+yum  install msodbcsql18 python3-pyodbc

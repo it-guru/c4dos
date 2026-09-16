@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+import sys
+sys.dont_write_bytecode = True
+
+import os
+import re
+import importlib
+from pathlib import Path
+script_dir = Path(__file__).resolve().parent
+lib_dir = script_dir / '..' / 'lib'
+sys.path.insert(0, str(lib_dir))
+sys.path.insert(1, str(script_dir))
+
+
+# 1. Add project root to sys.path to allow importing 'config'
+# (Assumes bin/ is a subfolder of your main project root)
+PROJECT_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..")
+)
+if PROJECT_DIR not in sys.path:
+  sys.path.insert(0, PROJECT_DIR)
+#######################################################################
+import os
+import json
+import time
+import ctypes
+import signal
+import secrets
+from logger import *
+from pprint import pprint
+import argparse
+#######################################################################
+__CONFIG__="DEFAULT"
+
+def main():
+   global __CONFIG__
+   parser = argparse.ArgumentParser(description="c4ev - Event executor")
+   parser.add_argument("evname", help="Event Name")
+   parser.add_argument("-v","--verbose",action="store_true",
+                       help="run event in verbos mode")
+   parser.add_argument("-c","--config",
+                       default='c4dos',
+                       help="defines the config to load")
+   parser.add_argument("-l","--lang",
+                       help="set lang (overwrites env)")
+   args = parser.parse_args()
+   __CONFIG__=args.config
+
+   if args.lang:
+      os.environ["LANG"] = args.lang
+
+
+   from kernel import getEventObject
+
+   #print("instance obj")
+   evname=args.evname
+   if (not re.match(r"^[^/\.]+[/\.][^/\.]+$",evname)):
+      evname="base."+evname
+      
+   
+   o=getEventObject(evname)
+
+   if (o):
+      bk=o.run()
+      pprint(bk)
+   else:
+      exit(1)
+
+   exit(0)
+
+if __name__ == "__main__":
+   main()
+
+
+
+
+
+

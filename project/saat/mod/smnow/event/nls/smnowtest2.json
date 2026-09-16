@@ -1,0 +1,14 @@
+{
+  "givenname": {
+    "de": "Vorname",
+    "en": "First Name"
+  },
+  "surname": {
+    "de": "Nachname",
+    "en": "Last Name"
+  },
+  "err.gateway.connection_failed": {
+    "de": "Fehler beim Verbinden auf das Gateway {gw}",
+    "en": "Failed to connect to gateway {gw}"
+  }
+}

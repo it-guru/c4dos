@@ -1,0 +1,29 @@
+[Unit]
+Description=c4dos Daemon Service
+After=network.target remote-fs.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=a295897
+Group=a295897
+WorkingDirectory=/home/a295897/src/c4dos
+
+# Umgebungsvariablen setzen
+Environment="LOG_LEVEL=debug"
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Aufruf deines Daemons
+ExecStart=/home/a295897/src/c4dos/sbin/c4dos -c c4dos
+
+# Neustart-Verhalten bei Abstürzen
+Restart=on-failure
+RestartSec=5s
+
+# Standard-Ausgaben ans systemd-Journal schicken (wird über deinen Logger verarbeitet)
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+

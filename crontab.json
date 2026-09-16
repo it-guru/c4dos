@@ -1,0 +1,36 @@
+[
+  {
+    "name": "Heartbeat every 10 seconds",
+    "enabled": true,
+    "interval": 10,
+    "ports": [8081],
+    "endpoint": "/internal/internalTimer",
+    "method": "GET"
+  },
+  {
+    "name": "Daily report at 14:30",
+    "enabled": true,
+    "time": "14:30",
+    "ports": [8081],
+    "endpoint": "/reports/daily",
+    "method": "POST"
+  },
+  {
+    "name": "Workdays morning sync at 08:00 (Mon-Fri)",
+    "enabled": true,
+    "time": "08:00",
+    "weekdays": ["mon", "tue", "wed", "thu", "fri"],
+    "ports": [8080, 8081],
+    "endpoint": "/sync/morning",
+    "method": "GET"
+  },
+  {
+    "name": "Monthly accounting on 1st and 15th at 02:00",
+    "enabled": true,
+    "time": "02:00",
+    "month_days": [1, 15],
+    "ports": [8081],
+    "endpoint": "/accounting/process",
+    "method": "POST"
+  }
+]

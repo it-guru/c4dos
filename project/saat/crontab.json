@@ -1,0 +1,10 @@
+[
+  {
+    "name": "SM.now sync",
+    "enabled": true,
+    "interval": 650,
+    "ports": [8081],
+    "endpoint": "/app/config/smnow/event/circularEvent/sync",
+    "method": "GET"
+  }
+]
