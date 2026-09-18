@@ -164,7 +164,7 @@ class DataObjServiceNow(DataObjRest):
          result_text = response.read().decode(charset)
          #print(result_text)
          r = json.loads(result_text)
-         pprint(r)
+         #pprint(r)
          data=[]
          if (r.get("result",None)):
             if (r.get("result",None).get("code",None)==201):

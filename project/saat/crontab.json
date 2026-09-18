@@ -2,9 +2,17 @@
   {
     "name": "SM.now sync",
     "enabled": true,
-    "interval": 650,
+    "interval": 1800,
     "ports": [8081],
-    "endpoint": "/app/config/smnow/event/circularEvent/sync",
+    "endpoint": "/app/config/smnow/event/circularEvent/async",
+    "method": "GET"
+  },
+  {
+    "name": "mview Refresh dbo_refresh_customExportDeviceMView",
+    "enabled": true,
+    "interval": 900,
+    "ports": [8081],
+    "endpoint": "/app/config/saatcmdb/event/dbo_refresh_customExportDeviceMView/async",
     "method": "GET"
   }
 ]

@@ -16,30 +16,33 @@ from sqlalchemy import (
 
 def get_table_schema(metadata):
    return Table(
-      "system",
+      "cmdb_ci_server",
       metadata,
       # --- Primary Key ---
       Column(
          "id",
          BigInteger,
          primary_key=True,
-         autoincrement=False,
          server_default=text("'0'"),
       ),
       # --- Columns ---
-      Column("name", String(30), nullable=False, server_default=text("''")),
+      Column("name", String(128), nullable=False, server_default=text("''")),
+      Column("cost_center", String(128), nullable=True, server_default=text("''")),
+      Column("discovery_source", String(128), nullable=True, server_default=text("''")),
+      Column("life_cycle_stage", String(128), nullable=True, server_default=text("''")),
+      Column("life_cycle_stage_status", String(128), nullable=False, server_default=text("''")),
+      Column("location", String(128), nullable=True, server_default=text("''")),
+      Column("object_id", String(128), nullable=True, server_default=text("''")),
+      Column("used_for", String(128), nullable=True, server_default=text("''")),
+      Column("sys_class_name", String(128), nullable=True, server_default=text("''")),
       Column("sys_id", String(255), nullable=False, server_default=text("''")),
       Column(
          "createdate",
-         DateTime,
-         nullable=False,
-         server_default=text("'0000-00-00 00:00:00'"),
+         DateTime
       ),
       Column(
          "modifydate",
-         DateTime,
-         nullable=False,
-         server_default=text("'0000-00-00 00:00:00'"),
+         DateTime
       ),
       Column("createuser", BigInteger, nullable=False, server_default=text("'0'")),
       Column("modifyuser", BigInteger, nullable=False, server_default=text("'0'")),

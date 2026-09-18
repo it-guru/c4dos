@@ -10,11 +10,11 @@ _ = NLSManager(__file__)
 
 class Event(event):
    def run(self):
-      sys=getModuleObject("smnow::smnowsys")
+      sys=getModuleObject("saatcmdb.cmdb_ci_server")
       if (sys is None):
          return({"status": "failed",
            "exitcode": -1,
-           "exitmsg": "failed to instance smnow::smnowsys"
+           "exitmsg": "failed to instance saatcmdb.cmdb_ci_server"
          })
 
 
@@ -30,45 +30,58 @@ class Event(event):
       #o.setFilter({"mdate": ">2026-06-01 18:15:03"})
       o.setCurrentView("(ALL)")
       o.setCurrentOrder(["mdate"])
-      #o.limit(2)
+      #o.limit(100)
+      loopCount=0
       if (o.query()):
          while True:
            row=o.get_next()
            if row is None: break
-           logger.info("-----------------------------------")
-           logger.info("REC: %06d sys_id='%s' mdate='%s' name='%s'" % (int(row["recno"]),row["sysid"],row["mdate"],row["name"]))
-           sys.setFilter({"sysid": [row["sysid"]]})
-           r=sys.getDictList("(ALL)")
-           if (len(r)==0):   # not found local - processing insert
-              print("SMNOW recno=%03d id %s not found" % (row["recno"],row["sysid"]))
-              newrec={
-                 "name": row["name"],
-                 "sysid": row["sysid"],
-                 "conumber": row["conumber"],
-                 "mdate": row["mdate"]
-              }
+           if (sys.acquireLock(row["sysid"])):
               try:
-                 insertId=sys.validatedInsertRecord(newrec)
-                 logger.info(f"validatedInsertRecord={str(insertId)}")
+                 logger.info("-----------------------------------")
+                 logger.info("REC: %06d sys_id='%s' mdate='%s' name='%s'" % (int(row["recno"]),row["sysid"],row["mdate"],row["name"]))
+                 sys.setFilter({"sysid": [row["sysid"]]})
+                 r=sys.getDictList("(ALL)")
+                 if (len(r)==0):   # not found local - processing insert
+                    print("SMNOW recno=%03d id %s not found" % (row["recno"],row["sysid"]))
+                    newrec={
+                       "name": row["name"],
+                       "sysid": row["sysid"],
+                       "cost_center": row["cost_center"],
+                       "object_id": row["object_id"],
+                       "mdate": row["mdate"]
+                    }
+                    try:
+                       insertId=sys.validatedInsertRecord(newrec)
+                       logger.info(f"validatedInsertRecord={str(insertId)}")
 
-              except Exception as e:
-                 logger.error(f" 'circularEvent insert failed: {e}")
-           else:            # found local - processing update
-              for oldRec in r:
-                 print("oldRec recno=%03d id %s try to update" \
-                       % (oldRec["recno"],str(oldRec["id"])))
-                 newrec={
-                    "name": row["name"],
-                    "sysid": row["sysid"],
-                    "conumber": row["conumber"],
-                    "mdate": row["mdate"]
-                 }
-                 try:
-                    nAffected=sys.validatedUpdateRecord(oldRec,newrec,[[{"id":[oldRec["id"]]}]])
-                    logger.info(f"validatedUpdateRecord={str(nAffected)}")
-                
-                 except Exception as e:
-                    logger.error(f" 'circularEvent update failed: {e}")
+                    except Exception as e:
+                       logger.error(f" 'circularEvent insert failed: {e}")
+                 else:            # found local - processing update
+                    for oldRec in r:
+                       #print("oldRec recno=%03d id %s try to update" \
+                       #      % (oldRec["recno"],str(oldRec["id"])))
+                       newrec={
+                          "name": row["name"],
+                          "sysid": row["sysid"],
+                          "cost_center": row["cost_center"],
+                          "mdate": row["mdate"]
+                       }
+                       try:
+                          nAffected=sys.validatedUpdateRecord(
+                             oldRec, newrec,[[{"id":[oldRec["id"]]}]]
+                          )
+                          logger.info(f"validatedUpdateRecord={str(nAffected)}")
+                      
+                       except Exception as e:
+                          logger.error(f" 'circularEvent update failed: {e}")
+              finally:
+                 sys.releaseLock(row["sysid"])
+           else:
+              logger.warn(f" lock failed for sysid={row['sysid']}")
+
+           if (loopCount % 10 == 0): sys.commit()
+           loopCount+=1
 
 
 

@@ -31,6 +31,9 @@ class C4FlaskServer(C4Flask):
       }
       self.UniqueID_lck=threading.Lock()
 
+      self.locks={}
+      self.locks_lck=threading.Lock()
+
 
 
 app = C4FlaskServer(__name__)
@@ -173,6 +176,77 @@ def rpcCreateUniqueId(basePath,AppConfig):
    return jsonify({"status":"success","exitcode": 0, "UniqueID": newID})
 
 
+@app.route('/<basePath>/<AppConfig>/rpcAcquireLock')
+def rpcAcquireLock(basePath, AppConfig):
+  app_obj = current_app._get_current_object()
+  lock_key = request.args.get('key')
+  ttl = int(request.args.get('ttl', 60))
+  caller = request.args.get('caller', 'unknown')  # Parameter entgegennehmen
+
+  if not lock_key:
+    return jsonify(
+        {'status': 'error', 'exitcode': 400, 'message': 'Missing key'}
+    )
+
+  now = time.time()
+
+  with app_obj.locks_lck:
+    # Abgelaufene Locks aufräumen
+    expired_keys = [
+        k for k, info in app_obj.locks.items() if info['expires_at'] < now
+    ]
+    for k in expired_keys:
+      del app_obj.locks[k]
+
+    # Prüfen, ob vergeben
+    if lock_key in app_obj.locks:
+      holding_caller = app_obj.locks[lock_key].get('caller', 'unknown')
+      return jsonify({
+          'status': 'locked',
+          'acquired': False,
+          'exitcode': 1,
+          'message': f'Lock held by {holding_caller}',
+      })
+
+    # Lock zusammen mit Caller-Info und Expiration speichern
+    app_obj.locks[lock_key] = {'expires_at': now + ttl, 'caller': caller}
+
+    return jsonify({
+        'status': 'success',
+        'acquired': True,
+        'exitcode': 0,
+        'key': lock_key,
+        'caller': caller,
+        'expires_at': app_obj.locks[lock_key]['expires_at'],
+    })
+
+
+@app.route('/<basePath>/<AppConfig>/rpcListLocks')
+def rpcListLocks(basePath, AppConfig):
+  app_obj = current_app._get_current_object()
+
+  return jsonify({
+      'status': 'success',
+      'exitcode': 0,
+      'result': app_obj.locks,
+  })
+
+
+@app.route('/<basePath>/<AppConfig>/rpcReleaseLock')
+def rpcReleaseLock(basePath, AppConfig):
+  app_obj = current_app._get_current_object()
+  lock_key = request.args.get('key')
+
+  if not lock_key:
+    return jsonify(
+        {'status': 'error', 'exitcode': 400, 'message': 'Missing key'}
+    )
+
+  with app_obj.locks_lck:
+    if lock_key in app_obj.locks:
+      del app_obj.locks[lock_key]
+
+  return jsonify({'status': 'success', 'exitcode': 0, 'released': True})
 
 
 
