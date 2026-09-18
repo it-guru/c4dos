@@ -6,11 +6,16 @@ from pprint import pprint, pformat
 from logger import logger
 
 import http.client
+
 import socket
 import resource
 import urllib.request
 import urllib.error
+import urllib.parse
+
 import json
+import inspect
+import os
 
 from flask import g, has_request_context
 
@@ -184,6 +189,10 @@ class DataObj:
        print("WARN: not derevied method call do():")
        return(False)
 
+   def commit(self):
+       print("WARN: not derevied method call commit():")
+       return(False)
+
    def getDictList(self,view=None,filterExpr=None):
       if (not view is None):
          self.setCurrentView(view) 
@@ -205,6 +214,29 @@ class DataObj:
          print("DB Error: %s" % self.lastError())
 
       return(result["data"])
+
+   def getDictIndexed(self,ikeys:list,view=None,flt=None) -> dict:
+      if (not view is None):
+         self.setCurrentView(view) 
+      else:
+         if (not self._CurrentView):
+            self.setCurrentView(ikeys)
+      if (len(self._CurrentOrder) == 0): # means no order defined
+         self.setCurrentOrder(self._CurrentView)
+      if (not flt is None):
+         self.setFilter(flt)
+      l=self.getDictList()
+      result={}
+      for k in ikeys:
+         if (k in self._Field):
+            result[k]={}
+      for rec in l:
+         for k in ikeys:
+            result[k][rec[k]]=rec
+
+      return(result)
+
+
 
    def getFirstDict(self,view=None,filterExpr=None):
       if (not view is None):
@@ -397,6 +429,56 @@ class DataObj:
          return(r["UniqueID"])
       else:
          return(None)
+
+
+   def acquireLock(self, lock_key: str, ttl: int = 60) -> bool:
+     proxy_handler = urllib.request.ProxyHandler({})
+     HttpAgent = urllib.request.build_opener(proxy_handler)
+     target = "http://127.0.0.1:8081"
+     full_key = f"{self.__class__.__name__}:{lock_key}"
+     encoded_key = urllib.parse.quote(full_key)
+
+     frame_info = inspect.stack()[1]
+     caller_script = frame_info.filename
+     caller_line = frame_info.lineno  
+    
+     caller = urllib.parse.quote(f"{caller_script}:{caller_line}")
+
+     url = (f"{target}/config/app/rpcAcquireLock?"
+            f"key={encoded_key}&ttl={ttl}&caller={caller}")
+     req = urllib.request.Request(url, method="GET")
+
+     try:
+       with HttpAgent.open(req, timeout=3) as response:
+         if response.status == 200:
+           r = json.loads(response.read().decode("utf-8"))
+           return r.get("acquired", False)
+     except Exception as e:
+       logger.error(f"[acquireLock] Error: {e}")
+
+     return False
+
+
+   def releaseLock(self, lock_key: str) -> bool:
+     proxy_handler = urllib.request.ProxyHandler({})
+     HttpAgent = urllib.request.build_opener(proxy_handler)
+     target = "http://127.0.0.1:8081"
+     full_key = f"{self.__class__.__name__}:{lock_key}"
+     encoded_key = urllib.parse.quote(full_key)
+
+     url = f"{target}/config/app/rpcReleaseLock?key={encoded_key}"
+     req = urllib.request.Request(url, method="GET")
+
+     try:
+       with HttpAgent.open(req, timeout=3) as response:
+         if response.status == 200:
+           r = json.loads(response.read().decode("utf-8"))
+           return r.get("released", False)
+     except Exception as e:
+       logger.error(f"[releaseLock] Error: {e}")
+
+     return False
+
       
 
 

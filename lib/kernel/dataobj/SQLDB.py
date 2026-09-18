@@ -36,12 +36,19 @@ class DataObjSQLDB(DataObj):
     def get_from_sql(self) -> str:
        return(self._primaryBackendTable)
 
+
+    def commit(self):
+       if (self._connect()):
+          dbpool.commit(self._configSection) 
+       return(True)
+
+
     def query(self):
        if (self._connect()):
           logger.debug("SQLDB: condition: "+pformat(self._CurrentFilterExpr))
           logger.debug("SQLDB: dialect: '"+self.db.dialect.name+"'")
           wherestr=""
-          qparam=""
+          qparam={}
           if (self._CurrentAST):
              ASTprocessor=ConditionSQL()
              wherestr,qparam=ASTprocessor.compile(self._CurrentAST.getAST())
@@ -137,11 +144,29 @@ class DataObjSQLDB(DataObj):
 
 
 
+    def doRawSQL(self,cmd):
+       if (self._connect()):
+          try:
+             query=text(cmd)
+             result=self.db.execute(query)
+             return(True)
+          except DBAPIError as e:
+             self._lastError=e.orig
+             if hasattr(self._lastError,'args') and len(self._lastError.args)>1:
+                self._lastError=self._lastError.args[1]
+          except SQLAlchemyError as e:
+             self._lastError=str(e)
+
+       else:
+          self._lastError="Backend not connected"
+
+       return(False)
+
+
     def do_sql(self,cmd,param):
        if (self._connect()):
           try:
              query=cmd
-             #pprint(cmd)
              self._currentResultSet = self.db.execute(query,param)
              self._lastError=None
              self._RECNO=0
@@ -155,7 +180,6 @@ class DataObjSQLDB(DataObj):
 
        else:
           self._lastError="Backend not connected"
-
        return(False)
 
 
@@ -257,7 +281,8 @@ class DataObjSQLDB(DataObj):
 
           try:
             result=self.db.execute(stmt)
-            if (result.rowcount>0):
+            if ((result.rowcount>0) \
+                 or (self.db.dialect.name=='mssql' and result.rowcount==-1) ):
                return(insertID)
             return(None)
          

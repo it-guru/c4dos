@@ -71,24 +71,50 @@ def get_connection(configsection: str):
     return conns[configsection]["conn"]
 
 
+def commit(configsection: str):
+  conns = _get_current_conns()
+  if configsection in conns:
+    # 1. Bestehende Transaktion committen
+    conns[configsection]["trans"].commit()
+    # 2. Sofort eine neue Transaktion auf derselben Connection starten
+    conns[configsection]["trans"] = conns[configsection]["conn"].begin()
+
+
+def rollback(configsection: str):
+  conns = _get_current_conns()
+  if configsection in conns:
+    conns[configsection]["trans"].rollback()
+    conns[configsection]["trans"] = conns[configsection]["conn"].begin()
+
+
+
 def closeAllOpenTransactionsInCurrentThread(exception=None):
-    #print("closeAllOpenTransactionsInCurrentThread:")
-    conns = getattr(_thread_local, "conns", None)
-    if not conns:
-        return
+  # print("closeAllOpenTransactionsInCurrentThread:")
+  conns = getattr(_thread_local, "conns", None)
+  if not conns:
+    return
 
-    for configsection, item in list(conns.items()):
-        conn = item["conn"]
-        trans = item["trans"]
-        try:
-            if exception is not None:
-                trans.rollback()
-            else:
-                trans.commit()
-        finally:
-            conn.close()
+  for configsection, item in list(conns.items()):
+    conn = item["conn"]
+    trans = item["trans"]
+    try:
+      if exception is not None:
+        trans.rollback()
+      else:
+        trans.commit()
+    except Exception:
+      try:
+        trans.rollback()
+      except Exception:
+        pass  
+    finally:
+      try:
+        conn.close()
+      except Exception:
+        pass
 
-    _thread_local.conns = {}
+  _thread_local.conns = {}
+
 
 
 def _auto_close_on_exit():
