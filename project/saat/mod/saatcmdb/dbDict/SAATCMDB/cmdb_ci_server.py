@@ -27,6 +27,8 @@ def get_table_schema(metadata):
       ),
       # --- Columns ---
       Column("name", String(128), nullable=False, server_default=text("''")),
+      Column("cleanname", String(128), nullable=True),
+      Column("realcomputername", String(128), nullable=True),
       Column("cost_center", String(128), nullable=True, server_default=text("''")),
       Column("discovery_source", String(128), nullable=True, server_default=text("''")),
       Column("life_cycle_stage", String(128), nullable=True, server_default=text("''")),
@@ -36,6 +38,8 @@ def get_table_schema(metadata):
       Column("used_for", String(128), nullable=True, server_default=text("''")),
       Column("sys_class_name", String(128), nullable=True, server_default=text("''")),
       Column("sys_id", String(255), nullable=False, server_default=text("''")),
+      Column("w5baseid", String(255), nullable=False, server_default=text("''")),
+      Column("compliancecomputerid", String(255), nullable=False, server_default=text("''")),
       Column(
          "createdate",
          DateTime

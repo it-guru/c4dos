@@ -53,6 +53,22 @@ class SaatcmdbCmdb_ci_server(DataObjSQLDB):
    recno                   = FieldRecNo(
       label                = "Record Number"
    )
+   cleanname               = FieldText(
+      backendname          = _primaryBackendTable+".cleanname",
+      label                = "cleanname"
+   )
+   realcomputername        = FieldText(
+      backendname          = _primaryBackendTable+".realcomputername",
+      label                = "Flexera: realcomputername"
+   )
+   w5baseid                = FieldText(
+      backendname          = _primaryBackendTable+".w5baseid",
+      label                = "Flexera: w5baseid"
+   )
+   computerid              = FieldText(
+      backendname          = _primaryBackendTable+".compliancecomputerid",
+      label                = "Flexera: ComplianceComputerID"
+   )
    mdate            = FieldMDate()
 
    def validate(self,oldrec: dict, newrec: dict, orgRec: dict):
