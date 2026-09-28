@@ -15,7 +15,7 @@ class Event(event):
            "exitmsg": "failed to instance "+dataobjname
          })
 
-      o.setFilter({"name":"ede55m"})
+      o.setFilter({"name":"ede55m ede127 ede188"})
       result=o.getDictList("(ALL)")
 
       return({"status": "success","exitcode": 0,"result": result})

@@ -2,7 +2,7 @@
   {
     "name": "SM.now sync",
     "enabled": true,
-    "interval": 1800,
+    "interval": 3600,
     "ports": [8081],
     "endpoint": "/app/config/smnow/event/circularEvent/async",
     "method": "GET"
@@ -12,7 +12,7 @@
     "enabled": true,
     "interval": 900,
     "ports": [8081],
-    "endpoint": "/app/config/saatcmdb/event/dbo_refresh_customExportDeviceMView/async",
+    "endpoint": "/app/config/saatcmdb/event/dbo_refresh_customExportDeviceMView/sync",
     "method": "GET"
   }
 ]

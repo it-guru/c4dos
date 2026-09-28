@@ -89,25 +89,35 @@ def runEvent(basePath,AppConfig,module,evname,mode):
          return(jsonify(bk))
       else:
          try:
-             pid = os.fork()
+            pid = os.fork()
          except OSError as e:
-             sys.exit(f"Fork failed: {e}")
+            sys.exit(f"Fork failed: {e}")
         
          if pid > 0:
-             logger.info(f"{mode} event '{module}.{evname} forked PID({pid})")
+            os.waitpid(pid, 0)
          else:
-             self.post_fork_child_cleanup()
-             setproctitle(f"c4dos: Event({module}.{evname}")
-             logger.info(f"[Ev:{module}.{evname}] "\
-                          "start at PID({os.getpid()}")
-             try:
-                 bk=o.run()
-             except Exception as e:
-                 print(f"[Child] Fehler: {e}")
-             finally:
-                 logger.info(f"[Ev:{module}.{evname}] "\
-                              "finished pid({os.getpid()}")
-                 os._exit(0)
+            try:
+               self.post_fork_child_cleanup()
+               setproctitle(f"c4dos: Event({module}.{evname}")
+               spid = os.fork()
+            except OSError as e:
+               sys.exit(f"Fork failed: {e}")
+            if (spid > 0):
+               logger.info(f"[Ev:{module}.{evname}] "\
+                            "process running at spid={{spid}}")
+            else:
+               logger.info(f"[Ev:{module}.{evname}] "\
+                            "start at PID({os.getpid()}")
+               try:
+                   bk=o.run()
+               except Exception as e:
+                   print(f"[Child] Fehler: {e}")
+               finally:
+                   logger.info(f"[Ev:{module}.{evname}] "\
+                                "finished pid({os.getpid()}")
+                   os._exit(0)
+            os._exit(0)
+           
    else:
       return jsonify({"status":"failed","exitcode": -1, 
                       "exitmsg": "fail to instance EventObjekt"})

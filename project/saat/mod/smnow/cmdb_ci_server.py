@@ -41,6 +41,10 @@ class SmnowCmdb_ci_server(DataObjServiceNow, HttpAuthTardis):
       backendname          = "cost_center",
       label                = "cost_center"
    )
+   serviceInstances        = FieldText(
+      backendname          = "serviceInstances",
+      label                = "cost_center"
+   )
    correlationid           = FieldText(
       backendname          = "correlation_id",
       label                = "correlation_id"
