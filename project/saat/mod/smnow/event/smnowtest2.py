@@ -9,7 +9,7 @@ _ = NLSManager(__file__)
 
 
 class Event(event):
-   def run(self):
+   def run(self,param):
       dataobjname="smnow.cmdb_ci_server"
       o=getModuleObject(dataobjname)
       if (o is None):

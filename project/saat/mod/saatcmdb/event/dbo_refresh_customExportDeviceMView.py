@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 class Event(event):
-   def run(self):
+   def run(self,param):
       dataobjname="saatcmdb.dbDict_dbo"
       o=getModuleObject(dataobjname)
       if (o is None):

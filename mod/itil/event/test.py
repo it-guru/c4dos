@@ -8,7 +8,7 @@ class Event(event):
       print(f"Construct Event in {__file__}")
       super().__init__()
 
-   def run(self):
+   def run(self,param):
       print(f"run {__file__}")
       o=getModuleObject("itil.system")
       search_criteria=[

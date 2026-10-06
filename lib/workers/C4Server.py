@@ -79,13 +79,23 @@ def runEvent(basePath,AppConfig,module,evname,mode):
    if not auth_key or auth_key != current_app.C4InternalKey:
       abort(403, description="Access denied. Invalid X-AUTHKEY token.")
 
+   event_params={}
+   if request.method == 'GET':
+      event_params = request.args.to_dict()
+   elif request.method == 'POST':
+    data = request.get_json(silent=True)
+    if isinstance(data, dict):
+      event_params = data
+    else:
+      event_params = {}
+
    o=getEventObject(module,evname)
 
    if (o):
       if (mode == "sync"):
          logger.info(f"[Ev:{module}.{evname}] "\
                       "sync run at PID({os.getpid()}")
-         bk=o.run()
+         bk=o.run(event_params)
          return(jsonify(bk))
       else:
          try:
@@ -109,7 +119,7 @@ def runEvent(basePath,AppConfig,module,evname,mode):
                logger.info(f"[Ev:{module}.{evname}] "\
                             "start at PID({os.getpid()}")
                try:
-                   bk=o.run()
+                   bk=o.run(event_params)
                except Exception as e:
                    print(f"[Child] Fehler: {e}")
                finally:

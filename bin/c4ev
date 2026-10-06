@@ -32,6 +32,25 @@ import argparse
 #######################################################################
 __CONFIG__="DEFAULT"
 
+
+def parse_dynamic_args(unparsed_args):
+  dynamic_parser = argparse.ArgumentParser()
+  _, unknown = dynamic_parser.parse_known_args(unparsed_args)
+
+  event_params = {}
+  for arg in unknown:
+    if arg.startswith("--"):
+      # remove  '--'
+      kv = arg[2:]
+      if "=" in kv:
+        key, value = kv.split("=", 1)
+        event_params[key] = value
+      else:
+        event_params[kv] = True
+
+  return event_params
+
+
 def main():
    global __CONFIG__
    parser = argparse.ArgumentParser(description="c4ev - Event executor")
@@ -43,7 +62,10 @@ def main():
                        help="defines the config to load")
    parser.add_argument("-l","--lang",
                        help="set lang (overwrites env)")
-   args = parser.parse_args()
+#   args = parser.parse_args()
+
+   args, unknown_args = parser.parse_known_args()
+
    __CONFIG__=args.config
 
    if args.lang:
@@ -56,12 +78,15 @@ def main():
    evname=args.evname
    if (not re.match(r"^[^/\.]+[/\.][^/\.]+$",evname)):
       evname="base."+evname
+
+   event_param=parse_dynamic_args(unknown_args)
       
+   pprint(event_param)
    
    o=getEventObject(evname)
 
    if (o):
-      bk=o.run()
+      bk=o.run(event_param)
       pprint(bk)
    else:
       exit(1)

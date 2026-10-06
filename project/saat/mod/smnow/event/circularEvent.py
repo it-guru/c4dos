@@ -11,7 +11,7 @@ _ = NLSManager(__file__)
 
 
 class Event(event):
-   def run(self):
+   def run(self,param):
       lsys=getModuleObject("saatcmdb.customExportDevice")
       if (lsys is None):
          return({"status": "failed",

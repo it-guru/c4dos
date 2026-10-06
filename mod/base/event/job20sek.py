@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 class Event(event):
-   def run(self):
+   def run(self,param):
       o=getModuleObject("base.contact")
       if (o is None):
          return({"status": "failed",

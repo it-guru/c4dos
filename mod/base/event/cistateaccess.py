@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 class Event(event):
-   def run(self):
+   def run(self,param):
       dataobjname="base.cistatus"
       o=getModuleObject(dataobjname)
       if (o is None):

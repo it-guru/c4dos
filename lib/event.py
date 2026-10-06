@@ -3,7 +3,7 @@ class event():
       #print(f"Konstruktur in {__file__}")
       pass
 
-   def run(self):
+   def run(self,param):
       #print(f"default run() handler {__file__}")
       pass
 

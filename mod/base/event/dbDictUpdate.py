@@ -41,7 +41,7 @@ class Event(event):
   def __init__(self):
     super().__init__()
 
-  def run(self):
+  def run(self,param):
     logger.info("Starting automatic database schema discovery and update")
 
     # 1. Discover all base paths from MOD_PATH config
