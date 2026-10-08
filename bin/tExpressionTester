@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+import sys
+sys.dont_write_bytecode = True
+
+import os
+import re
+import importlib
+from pathlib import Path
+script_dir = Path(__file__).resolve().parent
+lib_dir = script_dir / '..' / 'lib'
+sys.path.insert(0, str(lib_dir))
+sys.path.insert(1, str(script_dir))
+
+
+# 1. Add project root to sys.path to allow importing 'config'
+# (Assumes bin/ is a subfolder of your main project root)
+PROJECT_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..")
+)
+if PROJECT_DIR not in sys.path:
+  sys.path.insert(0, PROJECT_DIR)
+#######################################################################
+import os
+import json
+import time
+import ctypes
+import signal
+import secrets
+from logger import *
+from pprint import pprint,pformat
+import argparse
+#######################################################################
+__CONFIG__="DEFAULT"
+
+import date
+
+
+def main():
+   global __CONFIG__
+   parser = argparse.ArgumentParser(description="c4ev - Event executor")
+   parser.add_argument("dateexpr", help="Date Expression")
+   parser.add_argument("-v","--verbose",action="store_true",
+                       help="run event in verbos mode")
+   parser.add_argument("-c","--config",
+                       default='c4dos',
+                       help="defines the config to load")
+   parser.add_argument("-l","--lang",
+                       help="set lang (overwrites env)")
+#   args = parser.parse_args()
+
+   args, unknown_args = parser.parse_known_args()
+
+   __CONFIG__=args.config
+
+   if args.lang:
+      os.environ["LANG"] = args.lang
+
+   dateexpr=args.dateexpr
+
+   print(f"Date Expression='{dateexpr}'")
+
+#def expand_time_expression(val: str,
+#                            output_format: str = "en",
+#                            src_tz: Union[str, ZoneInfo] = "UTC",
+#                            dst_tz: Union[str, ZoneInfo] = "UTC",
+#                            def_hour: int = 0,
+#                            def_min: int = 0,
+#                            def_sec: int = 0,
+#                            i18n_labels: Optional[Dict[str, str]] = None,
+#                            return_tuple: bool = False
+#                        )->Union[str,Tuple[int,int,int,int,int,int],None]:
+   res,tuble=date.expand_time_expression(dateexpr)
+   print(f"res='{res}' tuble={pformat(tuble)}")
+
+   (res)=date.expand_time_expression(dateexpr)
+   print(f"res only='{pformat(res)}'")
+
+
+
+
+
+if __name__ == "__main__":
+   main()
+
+
+
+
+
+

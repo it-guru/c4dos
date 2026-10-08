@@ -178,7 +178,8 @@ def _parse_single_block(block: str, fld_obj: Any) -> ConditionExprNode:
 
 def _parse_field_value_expression(fld_name: str, val: Union[str, List[Any]], fld_obj: Any) -> ConditionASTNode:
    """
-   Parses a single field's condition value (List or String) into an AST structure.
+   Parses a single field's condition value (List or String) 
+   into an AST structure.
    """
    # Check if field is Date or MDate type
    fld_class_name = fld_obj.__class__.__name__ if fld_obj else ""
