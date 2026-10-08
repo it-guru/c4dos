@@ -29,11 +29,39 @@ class ConditionSQL:
       clean_field = "".join(c for c in field_name if c.isalnum() or c == "_")
       return f"p_{clean_field}_{self._param_counter}"
 
-   def _compile_node(self, node: ConditionASTNode, params: Dict[str, Any]) -> str:
-      """
-      Recursively traverses the AST nodes and constructs SQL query fragments.
-      """
+
+
+   def _compile_node(self,node: ConditionASTNode,params: Dict[str, Any]) -> str:
       if isinstance(node, ConditionExprNode):
+         db_column = self._get_backend_name(node.field)
+         op = node.op.upper()
+         val = node.value
+         negate = node.negate
+         null_keywords={"[NULL]", "[LEER]", "[EMPTY]", "[NONE]"}
+         if ((val is None) or 
+             isinstance(val, str) and val.upper() in null_keywords):
+            if negate or op in ("!=", "<>"):
+               return f"({db_column} IS NOT NULL AND {db_column} != '')"
+            else:
+               return f"({db_column} IS NULL OR {db_column} = '')"
+
+         # 1. Handle Wildcard / LIKE translations (* -> %, ? -> _)
+         if op == "LIKE" and isinstance(val, str):
+            val = val.replace("*", "%").replace("?", "_")
+
+         # 2. Bind parameter
+         param_name = self._get_next_param_name(db_column)
+         params[param_name] = val
+
+         # 3. Construct expression using the extracted backend column name
+         expr_sql = f"{db_column} {op} :{param_name}"
+
+         # 4. Apply negation
+         if negate:
+            expr_sql = f"NOT ({expr_sql})"
+
+         return expr_sql
+
          # Extract backendname directly from node.field object
          db_column = self._get_backend_name(node.field)
          op = node.op.upper()

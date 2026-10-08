@@ -74,15 +74,10 @@ def main():
 
    from kernel import getEventObject
 
-   #print("instance obj")
    evname=args.evname
-   if (not re.match(r"^[^/\.]+[/\.][^/\.]+$",evname)):
-      evname="base."+evname
 
    event_param=parse_dynamic_args(unknown_args)
       
-   pprint(event_param)
-   
    o=getEventObject(evname)
 
    if (o):

@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+import glob
 import importlib.util
 import types
 import re
@@ -152,6 +153,9 @@ def getEventObject(module: str,evfile: str=None):
       if (match):
          module=match.group(1)
          evfile=match.group(2)
+      else:
+         evfile=module
+         module="*"
 
    #print("evmodule=%s evfile=%s" % (module,evfile))
    #######################################################################
@@ -159,14 +163,23 @@ def getEventObject(module: str,evfile: str=None):
    base_dir=config["GLOBAL"]["BASE_DIR"]
    modpath_str = config.get("GLOBAL", {}).get("MOD_PATH", "")
    raw_paths = [p.strip() for p in modpath_str.split(":") if p.strip()]
+   matched_files=[]
    for raw_path in raw_paths:
       if not raw_path.startswith("/"):
          dir_path = Path(base_dir) / raw_path
       else:
          dir_path = Path(raw_path)
-      search_paths.append(dir_path / "mod" / module / "event" / f"{evfile}.py")
-   #pprint(search_paths) 
-   target_file = next((p for p in search_paths if p.is_file()), None)
+      search_path=str(dir_path/"mod"/module/"event"/f"{evfile}.py") 
+      found_paths=[Path(p) for p in glob.glob(search_path)]
+      for p in found_paths:
+         if p.is_file() and p not in matched_files:
+           matched_files.append(p)
+
+   if (len(matched_files)>1 or len(matched_files)==0):
+      logger.error(f"No unique even file for '{module}.{evfile}'")
+      return None
+
+   target_file=matched_files[0]
   
    if not target_file:
      return None
