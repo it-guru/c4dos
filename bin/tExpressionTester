@@ -29,10 +29,10 @@ import secrets
 from logger import *
 from pprint import pprint,pformat
 import argparse
+from dateUtils import expTimeExpr
 #######################################################################
 __CONFIG__="DEFAULT"
 
-import date
 
 
 def main():
@@ -69,11 +69,14 @@ def main():
 #                            i18n_labels: Optional[Dict[str, str]] = None,
 #                            return_tuple: bool = False
 #                        )->Union[str,Tuple[int,int,int,int,int,int],None]:
-   res,tuble=date.expand_time_expression(dateexpr)
-   print(f"res='{res}' tuble={pformat(tuble)}")
+   res=expTimeExpr(dateexpr)
+   if (res):
+      print(f"res only='{res}'")
 
-   (res)=date.expand_time_expression(dateexpr)
-   print(f"res only='{pformat(res)}'")
+      res,tuble=expTimeExpr(dateexpr,return_tuple=True)
+      print(f"res='{res}' tuble={pformat(tuble)}")
+   else:
+      print(f"ERROR: fail to expand '{dateexpr}'")
 
 
 

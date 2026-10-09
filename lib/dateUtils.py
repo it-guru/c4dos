@@ -3,6 +3,8 @@ import sys
 from datetime import datetime, timezone
 from typing import Optional, Union, Tuple, Dict, Any
 
+from nls import NLSManager
+_ = NLSManager(__file__)
 
 try:
     from zoneinfo import ZoneInfo
@@ -18,16 +20,15 @@ _ = NLSManager(__file__)
 
 
 
-def expand_time_expression(val: str,
-                            output_format: str = "en",
-                            src_tz: Union[str, ZoneInfo] = "UTC",
-                            dst_tz: Union[str, ZoneInfo] = "UTC",
-                            def_hour: int = 0,
-                            def_min: int = 0,
-                            def_sec: int = 0,
-                            i18n_labels: Optional[Dict[str, str]] = None,
-                            return_tuple: bool = False
-                        )->Union[str,Tuple[int,int,int,int,int,int],None]:
+def expTimeExpr(val: str,
+                   output_format: str = "en",
+                   src_tz: Union[str, ZoneInfo] = "UTC",
+                   dst_tz: Union[str, ZoneInfo] = "UTC",
+                   def_hour: int = 0,
+                   def_min: int = 0,
+                   def_sec: int = 0,
+                   return_tuple: bool = False
+                )->Union[str,Tuple[int,int,int,int,int,int],None]:
     """
     Expands relative or absolute time expressions into a formatted 
     string or datetime tuple.
@@ -72,18 +73,21 @@ def expand_time_expression(val: str,
     today_labels = {"today"}
     monthbase_labels = {"monthbase"}
 
-    if i18n_labels:
-        if "now" in i18n_labels:
-            now_labels.add(i18n_labels["now"].lower())
-        if "today" in i18n_labels:
-            today_labels.add(i18n_labels["today"].lower())
-        if "monthbase" in i18n_labels:
-            monthbase_labels.add(i18n_labels["monthbase"].lower())
+    now_labels.add(_("now").lower())
+    today_labels.add(_("today").lower())
+    monthbase_labels.add(_("monthbase").lower())
 
     dt: Optional[datetime] = None
 
     # Helper to create localized datetime in src_tz and convert to dst_tz
-    def make_dt(year: int, month: int, day: int, hour: int, minute: int, second: int, tz_override=None) -> datetime:
+    def make_dt(year: int,
+                month: int,
+                day: int,
+                hour: int,
+                minute: int,
+                second: int, 
+                tz_override=None
+               ) -> datetime:
         tz = tz_override or src_tz_obj
         local_dt = datetime(year, month, day, hour, minute, second, tzinfo=tz)
         return local_dt.astimezone(dst_tz_obj)
@@ -106,7 +110,8 @@ def expand_time_expression(val: str,
             if val_lower.startswith(label):
                 matched_label = label
                 now_src = datetime.now(tz=src_tz_obj)
-                dt = make_dt(now_src.year, now_src.month, now_src.day, def_hour, def_min, def_sec)
+                dt=make_dt(now_src.year,now_src.month,now_src.day, 
+                           def_hour,def_min,def_sec)
                 val_str = val_str[len(matched_label):]
                 break
 
@@ -115,7 +120,8 @@ def expand_time_expression(val: str,
             if val_lower.startswith(label):
                 matched_label = label
                 now_src = datetime.now(tz=src_tz_obj)
-                dt = make_dt(now_src.year, now_src.month, 1, def_hour, def_min, def_sec)
+                dt = make_dt(now_src.year,now_src.month,1, 
+                             def_hour,def_min,def_sec)
                 val_str = val_str[len(matched_label):]
                 break
 
@@ -150,7 +156,7 @@ def expand_time_expression(val: str,
 
     if dt is None:
         # YYYY-MM-DD HH:MM:SS [TZ]
-        m = re.match(r"^(\d+)-(\d+)-(\d+)\s+(\d+):(\d+):(\d+)(?:\s+([A-Za-z]+))?", val_str)
+        m = re.match(r"^(\d+)-(\d+)-(\d+)[\s_]+(\d+):(\d+):(\d+)(?:[\s_]+([A-Za-z]+))?", val_str)
         if m:
             y, mth, d, h, mn, s = map(int, m.groups()[:6])
             tz_str = m.group(7)
@@ -174,7 +180,7 @@ def expand_time_expression(val: str,
 
     if dt is None:
         # DD.MM.YYYY HH:MM:SS [TZ]
-        m = re.match(r"^(\d+)\.(\d+)\.(\d+)\s+(\d+):(\d+):(\d+)(?:\s+([A-Za-z]+))?", val_str)
+        m = re.match(r"^(\d+)\.(\d+)\.(\d+)[\s_]+(\d+):(\d+):(\d+)(?:[\s_]+([A-Za-z]+))?", val_str)
         if m:
             d, mth, y, h, mn, s = map(int, m.groups()[:6])
             tz_str = m.group(7)
@@ -289,10 +295,11 @@ def expand_time_expression(val: str,
     # -------------------------------------------------------------------------
     # 3. Output generation
     # -------------------------------------------------------------------------
-    #if return_tuple:
-    t_tuble=(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+    if return_tuple:
+       t_tuble=(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+       return(date_to_string(dt, output_format, dst_tz=dst_tz_obj),t_tuble)
 
-    return date_to_string(dt, output_format, dst_tz=dst_tz_obj),t_tuble
+    return(date_to_string(dt, output_format, dst_tz=dst_tz_obj))
 
 
 def add_months(dt: datetime, months: int) -> datetime:

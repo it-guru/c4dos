@@ -34,7 +34,24 @@ class Event(event):
            "exitmsg": "failed to instance "+dataobjname
          })
 
-      #o.setFilter({"mdate": ">2026-06-01 18:15:03"})
+      # analyse local data to decide which data stream
+      # on SM.now is in our processing focus
+      doFullSync=False
+      startingMDatePoint="now-6h"
+      nLocalRec=lsys.countRecords()
+      logger.info(f"countRecords in saatcmdb.cmdb_ci_server={nLocalRec}")
+      if (nLocalRec<1000):
+         doFullSync=True
+
+
+      
+
+      if (doFullSync):
+         logger.info(f"start fullSync")
+         o.setFilter({})
+      else:
+         logger.info(f"start from mdate>{startingMDatePoint}")
+         o.setFilter({"mdate": f">{startingMDatePoint}"})
       o.setCurrentView("(ALL)")
       o.setCurrentOrder(["mdate"])
       #o.limit(100)

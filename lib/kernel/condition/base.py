@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 from kernel.field import *
 from logger import logger
 from pprint import pprint
+from dateUtils import expTimeExpr
 
 
 class ConditionASTNode:
@@ -73,32 +74,12 @@ def _tokenize_value_string(val_str: str, is_date_field: bool) -> List[str]:
    length = len(val_str)
    i = 0
 
-   # Regex pattern to match unquoted timestamp patterns like 2026-06-01 10:23:44
-   date_patlst=[
-    re.compile(r"^(!|>=|<=|>|<|=)?\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}"),
-    re.compile(r"^(!|>=|<=|>|<|=)?\d{1,2}.\d{1,2}.\d{2,4}\s+\d{2}:\d{2}:\d{2}")
-   ]
-
    while i < length:
       # Skip leading whitespace
       while i < length and val_str[i].isspace():
          i += 1
       if i >= length:
          break
-
-      # Check for unquoted date/time string if field is Date/MDate
-      if is_date_field:
-         is_date_field_handled=False
-         for date_pattern in date_patlst:
-            match = date_pattern.match(val_str[i:])
-            if match:
-               token_str = match.group(0)
-               tokens.append(token_str)
-               i += len(token_str)
-               is_date_field_handled=True
-               break
-         if (is_date_field_handled): continue
-
       char = val_str[i]
 
       # Quoted block ('...' or "...")
